@@ -393,7 +393,7 @@ public class MainActivity extends AppCompatActivity {
         tabList.remove(index);
 
         if (tabList.isEmpty()) {
-            if (dialog != null) dialog.dismiss();
+            if (tabDialog != null) tabDialog.dismiss();
             showHome();
             return;
         }
@@ -405,7 +405,11 @@ public class MainActivity extends AppCompatActivity {
         switchToTab(currentTabIndex);
         showTabManager(); // 刷新对话框
     }
-        String[] items = {
+
+    // =================== 底部菜单 ===================
+
+    private void showBottomMenu() {
+    String[] items = {
             getString(R.string.add_bookmark),
             getString(R.string.bookmarks),
             getString(R.string.history),
