@@ -39,16 +39,19 @@
 
         <activity
             android:name=".BookmarkActivity"
+            android:exported="false"
             android:label="@string/bookmarks"
             android:parentActivityName=".MainActivity" />
 
         <activity
             android:name=".HistoryActivity"
+            android:exported="false"
             android:label="@string/history"
             android:parentActivityName=".MainActivity" />
 
         <activity
             android:name=".SettingsActivity"
+            android:exported="false"
             android:label="@string/settings"
             android:parentActivityName=".MainActivity" />
 
