@@ -1,33 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <!-- 标签栏 -->
-    <HorizontalScrollView
-        android:id="@+id/tab_scroll_view"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:background="@color/tab_bar_bg"
-        android:scrollbars="none"
-        android:fillViewport="false">
-
-        <LinearLayout
-            android:id="@+id/tab_strip"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:padding="4dp" />
-    </HorizontalScrollView>
-
-    <!-- 工具栏 -->
+    <!-- 顶部地址栏（浏览模式下显示） -->
     <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+        android:id="@+id/toolbar_top"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="@color/primary_orange"
+        android:visibility="gone"
         app:contentInsetStart="4dp"
         app:contentInsetEnd="4dp">
 
@@ -37,29 +22,6 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <!-- 后退 -->
-            <ImageButton
-                android:id="@+id/btn_back"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:src="@drawable/ic_back"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:tint="@color/white"
-                android:contentDescription="@string/back"
-                android:padding="6dp" />
-
-            <!-- 前进 -->
-            <ImageButton
-                android:id="@+id/btn_forward"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:src="@drawable/ic_forward"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:tint="@color/white"
-                android:contentDescription="@string/forward"
-                android:padding="6dp" />
-
-            <!-- 地址栏 -->
             <EditText
                 android:id="@+id/address_bar"
                 android:layout_width="0dp"
@@ -77,9 +39,8 @@
                 android:inputType="textUri"
                 android:selectAllOnFocus="true" />
 
-            <!-- 刷新/停止 -->
             <ImageButton
-                android:id="@+id/btn_refresh"
+                android:id="@+id/btn_refresh_top"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:src="@drawable/ic_refresh"
@@ -88,19 +49,7 @@
                 android:contentDescription="@string/refresh"
                 android:padding="6dp" />
 
-            <!-- 主页 -->
-            <ImageButton
-                android:id="@+id/btn_home"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:src="@drawable/ic_home"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:tint="@color/white"
-                android:contentDescription="@string/home"
-                android:padding="6dp" />
-
         </LinearLayout>
-
     </androidx.appcompat.widget.Toolbar>
 
     <!-- 进度条 -->
@@ -114,11 +63,114 @@
         android:visibility="gone"
         android:max="100" />
 
-    <!-- WebView容器 -->
+    <!-- 主页内容（未打开网页时显示） -->
+    <LinearLayout
+        android:id="@+id/home_screen"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="@color/white">
+
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/ic_launcher"
+            android:layout_marginBottom="32dp" />
+
+        <EditText
+            android:id="@+id/home_search_bar"
+            android:layout_width="300dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_address_bar"
+            android:paddingHorizontal="16dp"
+            android:textColor="@color/address_text"
+            android:textSize="16sp"
+            android:textColorHint="@color/address_hint"
+            android:hint="@string/search_hint"
+            android:maxLines="1"
+            android:imeOptions="actionGo"
+            android:inputType="text"
+            android:selectAllOnFocus="true"
+            android:gravity="center_vertical" />
+
+    </LinearLayout>
+
+    <!-- WebView 容器（浏览模式下显示） -->
     <FrameLayout
         android:id="@+id/web_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:visibility="gone" />
+
+    <!-- 底部工具栏 -->
+    <LinearLayout
+        android:id="@+id/bottom_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:background="@color/tab_bar_bg"
+        android:gravity="center"
+        android:paddingHorizontal="8dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_back"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white"
+            android:contentDescription="@string/back"
+            android:padding="6dp" />
+
+        <ImageButton
+            android:id="@+id/btn_forward"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_forward"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white"
+            android:contentDescription="@string/forward"
+            android:padding="6dp" />
+
+        <ImageButton
+            android:id="@+id/btn_home_bottom"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_home"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white"
+            android:contentDescription="@string/home"
+            android:padding="6dp" />
+
+        <ImageButton
+            android:id="@+id/btn_tabs"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:src="@drawable/ic_add_tab"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white"
+            android:contentDescription="@string/new_tab"
+            android:padding="6dp" />
+
+        <ImageButton
+            android:id="@+id/btn_menu"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_menu"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white"
+            android:contentDescription="@string/more"
+            android:padding="6dp" />
+
+    </LinearLayout>
 
 </LinearLayout>

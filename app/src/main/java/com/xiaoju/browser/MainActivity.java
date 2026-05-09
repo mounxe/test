@@ -5,14 +5,11 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -24,8 +21,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -40,26 +37,35 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    // 标签页列表
+    private enum Mode { HOME, BROWSING }
+    private Mode currentMode = Mode.HOME;
+
+    // UI：主页
+    private LinearLayout homeScreen;
+    private EditText homeSearchBar;
+
+    // UI：浏览
+    private Toolbar toolbarTop;
+    private EditText addressBar;
+    private ProgressBar progressBar;
+    private FrameLayout webContainer;
+
+    // UI：底部工具栏
+    private LinearLayout bottomToolbar;
+    private ImageButton btnBack, btnForward, btnRefreshTop;
+    private ImageButton btnHomeBottom, btnTabs, btnMenu;
+
+    // WebView 管理
     private List<TabInfo> tabList = new ArrayList<>();
     private int currentTabIndex = 0;
 
-    // UI组件
-    private EditText addressBar;
-    private ProgressBar progressBar;
-    private ImageButton btnBack, btnForward, btnRefresh, btnHome;
-    private LinearLayout tabStrip;
-    private HorizontalScrollView tabScrollView;
-    private FrameLayout webContainer;
-    private Toolbar toolbar;
-
-    // 数据管理
+    // 数据
     private BookmarkManager bookmarkManager;
     private HistoryManager historyManager;
     private SharedPreferences prefs;
 
-    private static final String HOME_URL = "https://www.baidu.com";
-    private static final String PREF_NAME = "xiaoju_prefs";
+    private static final String PREF_NAME = "xiaoj
+u_prefs";
     private static final String PREF_SEARCH_ENGINE = "search_engine";
 
     @Override
@@ -72,45 +78,43 @@ public class MainActivity extends AppCompatActivity {
         historyManager = new HistoryManager(this);
 
         initViews();
-        setupToolbar();
-        setupAddressBar();
-        setupNavigationButtons();
-
-        // 处理外部打开的URL
-        Intent intent = getIntent();
-        String initUrl = null;
-        if (Intent.ACTION_VIEW.equals(intent.getAction()) && intent.getData() != null) {
-            initUrl = intent.getData().toString();
-        }
-
-        // 创建第一个标签页
-        addNewTab(initUrl != null ? initUrl : HOME_URL);
+        setupListeners();
+        showHome();
     }
 
     private void initViews() {
-        toolbar = findViewById(R.id.toolbar);
+        homeScreen = findViewById(R.id.home_screen);
+        homeSearchBar = findViewById(R.id.home_search_bar);
+
+        toolbarTop = findViewById(R.id.toolbar_top);
         addressBar = findViewById(R.id.address_bar);
         progressBar = findViewById(R.id.progress_bar);
+        webContainer = findViewById(R.id.web_container);
+
+        bottomToolbar = findViewById(R.id.bottom_toolbar);
         btnBack = findViewById(R.id.btn_back);
         btnForward = findViewById(R.id.btn_forward);
-        btnRefresh = findViewById(R.id.btn_refresh);
-        btnHome = findViewById(R.id.btn_home);
-        tabStrip = findViewById(R.id.tab_strip);
-        tabScrollView = findViewById(R.id.tab_scroll_view);
-        webContainer = findViewById(R.id.web_container);
+        btnRefreshTop = findViewById(R.id.btn_refresh_top);
+        btnHomeBottom = findViewById(R.id.btn_home_bottom);
+        btnTabs = findViewById(R.id.btn_tabs);
+        btnMenu = findViewById(R.id.btn_menu);
     }
 
-    private void setupToolbar() {
-        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayShowTitleEnabled(false);
-        }
-    }
+    private void setupListeners() {
+        homeSearchBar.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_GO) {
+                String input = homeSearchBar.getText().toString().trim();
+                if (!TextUtils.isEmpty(input)) {
+                    enterBrowsingMode();
+                    addNewTab(convertToUrl(input));
+                }
+                return true;
+            }
+            return false;
+        });
 
-    private void setupAddressBar() {
         addressBar.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_GO ||
-                (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+            if (actionId == EditorInfo.IME_ACTION_GO) {
                 loadUrl(addressBar.getText().toString().trim());
                 hideKeyboard();
                 return true;
@@ -118,7 +122,6 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
 
-        // 长按复制URL
         addressBar.setOnLongClickListener(v -> {
             String url = addressBar.getText().toString();
             if (!TextUtils.isEmpty(url)) {
@@ -129,9 +132,7 @@ public class MainActivity extends AppCompatActivity {
             }
             return true;
         });
-    }
 
-    private void setupNavigationButtons() {
         btnBack.setOnClickListener(v -> {
             WebView wv = getCurrentWebView();
             if (wv != null && wv.canGoBack()) wv.goBack();
@@ -142,148 +143,70 @@ public class MainActivity extends AppCompatActivity {
             if (wv != null && wv.canGoForward()) wv.goForward();
         });
 
-        btnRefresh.setOnClickListener(v -> {
+        btnRefreshTop.setOnClickListener(v -> {
             WebView wv = getCurrentWebView();
             if (wv != null) {
                 if (wv.getProgress() < 100) {
                     wv.stopLoading();
-                    btnRefresh.setImageResource(R.drawable.ic_refresh);
                 } else {
                     wv.reload();
                 }
             }
         });
 
-        btnHome.setOnClickListener(v -> {
-            WebView wv = getCurrentWebView();
-            if (wv != null) wv.loadUrl(HOME_URL);
+        btnHomeBottom.setOnClickListener(v -> showHome());
+
+        btnTabs.setOnClickListener(v -> {
+            enterBrowsingMode();
+            addNewTab(null);
         });
+
+        btnMenu.setOnClickListener(v -> showBottomMenu());
+    }
+
+    // =================== 模式切换 ===================
+
+    private void showHome() {
+        currentMode = Mode.HOME;
+        homeScreen.setVisibility(View.VISIBLE);
+        toolbarTop.setVisibility(View.GONE);
+        webContainer.setVisibility(View.GONE);
+        progressBar.setVisibility(View.GONE);
+
+        for (TabInfo tab : tabList) {
+            webContainer.removeView(tab.webView);
+            tab.webView.destroy();
+        }
+        tabList.clear();
+        currentTabIndex = 0;
+    }
+
+    private void enterBrowsingMode() {
+        currentMode = Mode.BROWSING;
+        homeScreen.setVisibility(View.GONE);
+        toolbarTop.setVisibility(View.VISIBLE);
+        webContainer.setVisibility(View.VISIBLE);
     }
 
     // =================== 标签页管理 ===================
 
     private void addNewTab(String url) {
-        // 隐藏当前WebView
-        if (!tabList.isEmpty() && currentTabIndex < tabList.size()) {
-            tabList.get(currentTabIndex).webView.setVisibility(View.GONE);
-        }
+        enterBrowsingMode();
 
         WebView webView = createWebView();
         webContainer.addView(webView);
 
-        TabInfo tab = new TabInfo(webView, url);
+        String title = (url != null) ? url : "";
+        TabInfo tab = new TabInfo(webView, title);
         tabList.add(tab);
         currentTabIndex = tabList.size() - 1;
 
-        webView.loadUrl(url);
-        refreshTabStrip();
-    }
-
-    private void switchToTab(int index) {
-        if (index < 0 || index >= tabList.size()) return;
-        if (currentTabIndex < tabList.size()) {
-            tabList.get(currentTabIndex).webView.setVisibility(View.GONE);
+        if (url != null) {
+            webView.loadUrl(url);
         }
-        currentTabIndex = index;
-        tabList.get(currentTabIndex).webView.setVisibility(View.VISIBLE);
-        refreshTabStrip();
+
         updateAddressBar();
         updateNavButtons();
-    }
-
-    private void closeTab(int index) {
-        if (tabList.size() <= 1) {
-            Toast.makeText(this, R.string.last_tab_hint, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        WebView wv = tabList.get(index).webView;
-        webContainer.removeView(wv);
-        wv.destroy();
-        tabList.remove(index);
-
-        if (currentTabIndex >= tabList.size()) {
-            currentTabIndex = tabList.size() - 1;
-        }
-        tabList.get(currentTabIndex).webView.setVisibility(View.VISIBLE);
-        refreshTabStrip();
-        updateAddressBar();
-        updateNavButtons();
-    }
-
-    private void refreshTabStrip() {
-        tabStrip.removeAllViews();
-        for (int i = 0; i < tabList.size(); i++) {
-            final int idx = i;
-            View tabView = LayoutInflater.from(this).inflate(R.layout.item_tab, tabStrip, false);
-            TextView title = tabView.findViewById(R.id.tab_title);
-            ImageButton close = tabView.findViewById(R.id.tab_close);
-
-            String tabTitle = tabList.get(i).title;
-            title.setText(TextUtils.isEmpty(tabTitle) ? getString(R.string.new_tab) : tabTitle);
-
-            if (i == currentTabIndex) {
-                tabView.setSelected(true);
-            }
-
-            tabView.setOnClickListener(v -> switchToTab(idx));
-            close.setOnClickListener(v -> closeTab(idx));
-
-            tabStrip.addView(tabView);
-        }
-        // 滚动到当前标签
-        tabScrollView.post(() -> {
-            View current = tabStrip.getChildAt(currentTabIndex);
-            if (current != null) tabScrollView.smoothScrollTo(current.getLeft(), 0);
-        });
-    }
-
-    // =================== WebView工厂 ===================
-
-    private WebView createWebView() {
-        WebView webView = new WebView(this);
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-        settings.setAllowFileAccess(true);
-        settings.setBuiltInZoomControls(true);
-        settings.setDisplayZoomControls(false);
-        settings.setSupportZoom(true);
-        settings.setUseWideViewPort(true);
-        settings.setLoadWithOverviewMode(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setTextZoom(100);
-        settings.setUserAgentString(settings.getUserAgentString() + " XiaoJuBrowser/1.0");
-
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.MATCH_PARENT
-        );
-        webView.setLayoutParams(lp);
-
-        webView.setWebViewClient(new XiaoJuWebViewClient());
-        webView.setWebChromeClient(new XiaoJuChromeClient());
-
-        return webView;
-    }
-
-    // =================== URL加载 ===================
-
-    private void loadUrl(String input) {
-        if (TextUtils.isEmpty(input)) return;
-        String url;
-        if (input.startsWith("http://") || input.startsWith("https://") || input.startsWith("file://")) {
-            url = input;
-        } else if (input.contains(".") && !input.contains(" ")) {
-            url = "https://" + input;
-        } else {
-            // 搜索
-            String engine = prefs.getString(PREF_SEARCH_ENGINE, "https://www.baidu.com/s?wd=");
-            url = engine + Uri.encode(input);
-        }
-        WebView wv = getCurrentWebView();
-        if (wv != null) wv.loadUrl(url);
     }
 
     private WebView getCurrentWebView() {
@@ -293,16 +216,53 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateAddressBar() {
         WebView wv = getCurrentWebView();
-        if (wv != null) addressBar.setText(wv.getUrl());
+        if (wv != null) {
+            String url = wv.getUrl();
+            if (url != null && !url.equals("about:blank")) {
+                addressBar.setText(url);
+            }
+        }
     }
 
     private void updateNavButtons() {
         WebView wv = getCurrentWebView();
-        if (wv == null) return;
+        if (wv == null) {
+            btnBack.setEnabled(false);
+            btnForward.setEnabled(false);
+            btnBack.setAlpha(0.4f);
+            btnForward.setAlpha(0.4f);
+            return;
+        }
         btnBack.setEnabled(wv.canGoBack());
         btnForward.setEnabled(wv.canGoForward());
         btnBack.setAlpha(wv.canGoBack() ? 1.0f : 0.4f);
         btnForward.setAlpha(wv.canGoForward() ? 1.0f : 0.4f);
+    }
+
+    // =================== URL 加载 ===================
+
+    private String convertToUrl(String input) {
+        if (TextUtils.isEmpty(input)) return null;
+        if (input.startsWith("http://") || input.startsWith("https://")) {
+            return input;
+        } else if (input.contains(".") && !input.contains(" ")) {
+            return "https://" + input;
+        } else {
+            String engine = prefs.getString(PREF_SEARCH_ENGINE, "https://www.baidu.com/s?wd=");
+            return engine + Uri.encode(input);
+        }
+    }
+
+    private void loadUrl(String input) {
+        String url = convertToUrl(input);
+        if (url == null) return;
+        WebView wv = getCurrentWebView();
+        if (wv != null) {
+            wv.loadUrl(url);
+        } else {
+            enterBrowsingMode();
+            addNewTab(url);
+        }
     }
 
     private void hideKeyboard() {
@@ -310,43 +270,34 @@ public class MainActivity extends AppCompatActivity {
         if (imm != null) imm.hideSoftInputFromWindow(addressBar.getWindowToken(), 0);
     }
 
-    // =================== 菜单 ===================
+    // =================== 底部菜单 ===================
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        return true;
-    }
+    private void showBottomMenu() {
+        String[] items = {
+            getString(R.string.add_bookmark),
+            getString(R.string.bookmarks),
+            getString(R.string.history),
+            getString(R.string.desktop_site),
+            getString(R.string.share),
+            getString(R.string.clear_data),
+            getString(R.string.settings)
+        };
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.menu_new_tab) {
-            addNewTab(HOME_URL);
-            return true;
-        } else if (id == R.id.menu_bookmark_add) {
-            addBookmark();
-            return true;
-        } else if (id == R.id.menu_bookmarks) {
-            startActivity(new Intent(this, BookmarkActivity.class));
-            return true;
-        } else if (id == R.id.menu_history) {
-            startActivity(new Intent(this, HistoryActivity.class));
-            return true;
-        } else if (id == R.id.menu_settings) {
-            startActivity(new Intent(this, SettingsActivity.class));
-            return true;
-        } else if (id == R.id.menu_share) {
-            shareCurrentUrl();
-            return true;
-        } else if (id == R.id.menu_desktop_site) {
-            toggleDesktopSite(item);
-            return true;
-        } else if (id == R.id.menu_clear_data) {
-            showClearDataDialog();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.more);
+        builder.setItems(items, (dialog, which) -> {
+            switch (which) {
+                case 0: addBookmark(); break;
+                case 1: startActivity(new Intent(this, BookmarkActivity.class)); break;
+                case 2: startActivity(new Intent(this, HistoryActivity.class)); break;
+                case 3: toggleDesktopSite(); break;
+                case 4: shareCurrentUrl(); break;
+                case 5: showClearDataDialog(); break;
+                case 6: startActivity(new Intent(this, SettingsActivity.class)); break;
+            }
+        });
+        builder.setNegativeButton(R.string.cancel, null);
+        builder.show();
     }
 
     private void addBookmark() {
@@ -354,8 +305,7 @@ public class MainActivity extends AppCompatActivity {
         if (wv == null) return;
         String url = wv.getUrl();
         String title = wv.getTitle();
-        if (TextUtils.isEmpty(url)) return;
-
+        if (TextUtils.isEmpty(url) || "about:blank".equals(url)) return;
         bookmarkManager.addBookmark(title, url);
         Toast.makeText(this, R.string.bookmark_saved, Toast.LENGTH_SHORT).show();
     }
@@ -364,23 +314,33 @@ public class MainActivity extends AppCompatActivity {
         WebView wv = getCurrentWebView();
         if (wv == null) return;
         String url = wv.getUrl();
-        if (TextUtils.isEmpty(url)) return;
+        if (TextUtils.isEmpty(url) || "about:blank".equals(url)) return;
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("text/plain");
         shareIntent.putExtra(Intent.EXTRA_TEXT, url);
         startActivity(Intent.createChooser(shareIntent, getString(R.string.share)));
     }
 
-    private void toggleDesktopSite(MenuItem item) {
+    private boolean isDesktopMode() {
+        if (tabList.isEmpty() || currentTabIndex >= tabList.size()) return false;
+        return tabList.get(currentTabIndex).desktopMode;
+    }
+
+    private void toggleDesktopSite() {
+        if (tabList.isEmpty() || currentTabIndex >= tabList.size()) return;
         WebView wv = getCurrentWebView();
         if (wv == null) return;
         WebSettings settings = wv.getSettings();
-        boolean isDesktop = item.isChecked();
-        item.setChecked(!isDesktop);
-        if (!isDesktop) {
-            settings.setUserAgentString("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36");
+        TabInfo tab = tabList.get(currentTabIndex);
+        if (!tab.desktopMode) {
+            settings.setUserAgentString(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+            );
+            tab.desktopMode = true;
         } else {
             settings.setUserAgentString(null);
+            tab.desktopMode = false;
         }
         wv.reload();
     }
@@ -399,20 +359,19 @@ public class MainActivity extends AppCompatActivity {
             .show();
     }
 
-    // =================== 返回键处理 ===================
+    // =================== 返回键 ===================
 
     @Override
     public void onBackPressed() {
+        if (currentMode == Mode.HOME) {
+            super.onBackPressed();
+            return;
+        }
         WebView wv = getCurrentWebView();
         if (wv != null && wv.canGoBack()) {
             wv.goBack();
         } else {
-            // 关闭当前标签或退出
-            if (tabList.size() > 1) {
-                closeTab(currentTabIndex);
-            } else {
-                super.onBackPressed();
-            }
+            showHome();
         }
     }
 
@@ -425,6 +384,36 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+    // =================== WebView 工厂 ===================
+
+    private WebView createWebView() {
+        WebView webView = new WebView(this);
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setAllowFileAccess(true);
+        settings.setBuiltInZoomControls(true);
+        settings.setDisplayZoomControls(false);
+        settings.setSupportZoom(true);
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setTextZoom(100);
+
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        );
+        webView.setLayoutParams(lp);
+
+        webView.setWebViewClient(new XiaoJuWebViewClient());
+        webView.setWebChromeClient(new XiaoJuChromeClient());
+
+        return webView;
+    }
+
     // =================== WebViewClient ===================
 
     private class XiaoJuWebViewClient extends WebViewClient {
@@ -434,20 +423,17 @@ public class MainActivity extends AppCompatActivity {
             if (url.startsWith("http://") || url.startsWith("https://")) {
                 return false;
             }
-            // 处理其他scheme (tel, mailto等)
             try {
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                 startActivity(intent);
-            } catch (Exception e) {
-                // ignore
-            }
+            } catch (Exception e) { /* ignore */ }
             return true;
         }
 
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
             progressBar.setVisibility(View.VISIBLE);
-            btnRefresh.setImageResource(R.drawable.ic_stop);
+            btnRefreshTop.setImageResource(R.drawable.ic_stop);
             if (isCurrentWebView(view)) {
                 addressBar.setText(url);
                 updateNavButtons();
@@ -457,26 +443,15 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onPageFinished(WebView view, String url) {
             progressBar.setVisibility(View.GONE);
-            btnRefresh.setImageResource(R.drawable.ic_refresh);
+            btnRefreshTop.setImageResource(R.drawable.ic_refresh);
             if (isCurrentWebView(view)) {
                 updateNavButtons();
-                // 保存历史
-                String title = view.getTitle();
                 if (!TextUtils.isEmpty(url) && !url.equals("about:blank")) {
-                    historyManager.addHistory(title, url);
+                    historyManager.addHistory(view.getTitle(), url);
                 }
-                // 更新标签标题
-                for (TabInfo tab : tabList) {
-                    if (tab.webView == view) {
-                        tab.title = TextUtils.isEmpty(title) ? url : title;
-                    }
-                }
-                refreshTabStrip();
             }
         }
     }
-
-    // =================== WebChromeClient ===================
 
     private class XiaoJuChromeClient extends WebChromeClient {
         @Override
@@ -484,16 +459,6 @@ public class MainActivity extends AppCompatActivity {
             if (isCurrentWebView(view)) {
                 progressBar.setProgress(newProgress);
             }
-        }
-
-        @Override
-        public void onReceivedTitle(WebView view, String title) {
-            for (TabInfo tab : tabList) {
-                if (tab.webView == view) {
-                    tab.title = title;
-                }
-            }
-            refreshTabStrip();
         }
     }
 
@@ -506,13 +471,13 @@ public class MainActivity extends AppCompatActivity {
 
     static class TabInfo {
         WebView webView;
-        String url;
         String title;
+        boolean desktopMode;
 
-        TabInfo(WebView webView, String url) {
+        TabInfo(WebView webView, String title) {
             this.webView = webView;
-            this.url = url;
-            this.title = "";
+            this.title = title;
+            this.desktopMode = false;
         }
     }
 }

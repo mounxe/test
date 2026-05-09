@@ -22,6 +22,7 @@
     <string name="bookmark_saved">已添加到书签</string>
     <string name="url_copied">链接已复制</string>
     <string name="address_hint">输入网址或搜索内容</string>
+    <string name="search_hint">搜索或输入网址</string>
     <string name="delete">删除</string>
     <string name="delete_confirm">确认删除？</string>
     <string name="clear_all">清空全部</string>
