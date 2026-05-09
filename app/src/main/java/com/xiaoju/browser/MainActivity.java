@@ -59,8 +59,6 @@ public class MainActivity extends AppCompatActivity {
 
     // WebView 管理
     private List<TabInfo> tabList = new ArrayList<>();
-    private int currentTabIndex = 0;
-    private AlertDialog tabDialog;
 
     // 数据
     private BookmarkManager bookmarkManager;
@@ -240,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
 
     // =================== 标签页管理 ===================
 
-    private void addNewTab(String url) {
+    private void         addNewTab(String url) {
         // 如果URL为null，创建主页标签
         if (url == null) {
             TabInfo tab = new TabInfo(true); // isHomeTab = true
@@ -251,8 +249,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        enterBrowsingMode();
-
         WebView webView = createWebView();
         webContainer.addView(webView);
 
@@ -261,6 +257,8 @@ public class MainActivity extends AppCompatActivity {
         currentTabIndex = tabList.size() - 1;
 
         webView.loadUrl(url);
+
+        showWebForCurrentTab();
 
         updateAddressBar();
         updateNavButtons();
@@ -322,7 +320,6 @@ public class MainActivity extends AppCompatActivity {
         if (wv != null) {
             wv.loadUrl(url);
         } else {
-            enterBrowsingMode();
             addNewTab(url);
         }
     }
@@ -336,7 +333,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void showTabManager() {
         if (tabList.isEmpty()) {
-            enterBrowsingMode();
+            if (tabDialog != null) tabDialog.dismiss();
             addNewTab(null);
             return;
         }
@@ -361,12 +358,15 @@ public class MainActivity extends AppCompatActivity {
 
             // 标签页标题
             TextView tv = new TextView(this);
-            String displayText = tab.webView.getTitle();
-            if (TextUtils.isEmpty(displayText)) {
-                displayText = tab.webView.getUrl();
-            }
-            if (TextUtils.isEmpty(displayText)) {
-                displayText = "新标签页";
+            String displayText = "主页";
+            if (!tab.isHomeTab && tab.webView != null) {
+                String title = tab.webView.getTitle();
+                String url = tab.webView.getUrl();
+                if (!TextUtils.isEmpty(title)) {
+                    displayText = title;
+                } else if (!TextUtils.isEmpty(url) && !"about:blank".equals(url)) {
+                    displayText = url;
+                }
             }
             tv.setText(displayText);
             tv.setTextSize(16);
@@ -416,7 +416,6 @@ public class MainActivity extends AppCompatActivity {
         newTabBtn.setPadding(16, 24, 16, 24);
         newTabBtn.setOnClickListener(v -> {
             if (tabDialog != null) tabDialog.dismiss();
-            enterBrowsingMode();
             addNewTab(null);
         });
         layout.addView(newTabBtn);
@@ -457,13 +456,15 @@ public class MainActivity extends AppCompatActivity {
         if (index < 0 || index >= tabList.size()) return;
 
         TabInfo tab = tabList.get(index);
-        webContainer.removeView(tab.webView);
-        tab.webView.destroy();
+        if (tab.webView != null) {
+            webContainer.removeView(tab.webView);
+            tab.webView.destroy();
+        }
         tabList.remove(index);
 
         if (tabList.isEmpty()) {
             if (tabDialog != null) tabDialog.dismiss();
-            showHome();
+            addNewTab(null);
             return;
         }
 
@@ -568,22 +569,36 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (currentMode == Mode.HOME) {
+        TabInfo tab = (currentTabIndex < tabList.size()) ? tabList.get(currentTabIndex) : null;
+        
+        // 如果当前是主页标签，退出应用
+        if (tab != null && tab.isHomeTab) {
             super.onBackPressed();
             return;
         }
+        
+        // 如果是网页标签且可以返回
         WebView wv = getCurrentWebView();
         if (wv != null && wv.canGoBack()) {
             wv.goBack();
         } else {
-            showHome();
+            // 回到主页标签状态
+            if (tab != null) {
+                tab.webView = null;
+                tab.isHomeTab = true;
+                tab.title = "主页";
+                showHomeForCurrentTab();
+            }
         }
     }
 
     @Override
     protected void onDestroy() {
         for (TabInfo tab : tabList) {
-            tab.webView.destroy();
+            if (tab.webView != null) {
+                webContainer.removeView(tab.webView);
+                tab.webView.destroy();
+            }
         }
         tabList.clear();
         super.onDestroy();
