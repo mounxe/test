@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/search_engine"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold"
+            android:paddingBottom="12dp" />
+
+        <RadioGroup
+            android:id="@+id/search_engine_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                android:id="@+id/rb_baidu"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="百度 (baidu.com)"
+                android:textSize="14sp"
+                android:buttonTint="@color/primary_orange" />
+
+            <RadioButton
+                android:id="@+id/rb_bing"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="必应 Bing (bing.com)"
+                android:textSize="14sp"
+                android:buttonTint="@color/primary_orange" />
+
+            <RadioButton
+                android:id="@+id/rb_google"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="谷歌 Google (google.com)"
+                android:textSize="14sp"
+                android:buttonTint="@color/primary_orange" />
+
+            <RadioButton
+                android:id="@+id/rb_sogou"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="搜狗 (sogou.com)"
+                android:textSize="14sp"
+                android:buttonTint="@color/primary_orange" />
+
+            <RadioButton
+                android:id="@+id/rb_custom"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="@string/custom_engine"
+                android:textSize="14sp"
+                android:buttonTint="@color/primary_orange" />
+
+        </RadioGroup>
+
+        <EditText
+            android:id="@+id/custom_engine_edit"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:hint="@string/custom_engine_hint"
+            android:textSize="13sp"
+            android:inputType="textUri"
+            android:background="@drawable/bg_address_bar"
+            android:paddingHorizontal="10dp"
+            android:layout_marginTop="8dp" />
+
+        <android.widget.Button
+            android:id="@+id/btn_save"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:text="@string/save"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/primary_orange"
+            android:layout_marginTop="24dp" />
+
+    </LinearLayout>
+
+</ScrollView>

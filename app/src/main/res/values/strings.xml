@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">小橘浏览器</string>
+    <string name="back">后退</string>
+    <string name="forward">前进</string>
+    <string name="refresh">刷新</string>
+    <string name="home">主页</string>
+    <string name="new_tab">新标签页</string>
+    <string name="add_bookmark">收藏</string>
+    <string name="bookmarks">书签</string>
+    <string name="history">历史记录</string>
+    <string name="settings">设置</string>
+    <string name="more">更多</string>
+    <string name="share">分享</string>
+    <string name="desktop_site">请求桌面版网站</string>
+    <string name="clear_data">清除数据</string>
+    <string name="search_engine">搜索引擎</string>
+    <string name="custom_engine">自定义搜索引擎</string>
+    <string name="custom_engine_hint">例如: https://example.com/search?q=</string>
+    <string name="save">保存设置</string>
+    <string name="settings_saved">设置已保存</string>
+    <string name="bookmark_saved">已添加到书签</string>
+    <string name="url_copied">链接已复制</string>
+    <string name="address_hint">输入网址或搜索内容</string>
+    <string name="delete">删除</string>
+    <string name="delete_confirm">确认删除？</string>
+    <string name="clear_all">清空全部</string>
+    <string name="confirm">确认</string>
+    <string name="cancel">取消</string>
+    <string name="empty">暂无内容</string>
+    <string name="last_tab_hint">最后一个标签页无法关闭</string>
+    <string name="clear_data_confirm">将清除历史记录和缓存，确认继续？</string>
+    <string name="clear_history_confirm">将清空全部历史记录，确认继续？</string>
+    <string name="data_cleared">数据已清除</string>
+</resources>

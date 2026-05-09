@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小橘浏览器 - UI预览</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #1a1a1a; display: flex; gap: 40px; justify-content: center; align-items: flex-start; padding: 40px 20px; flex-wrap: wrap; }
+
+.section-title { color: #fff; text-align: center; font-size: 14px; margin-bottom: 12px; opacity: 0.7; }
+
+/* 手机壳 */
+.phone-frame {
+  width: 320px;
+  background: #222;
+  border-radius: 40px;
+  padding: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 0 0 2px #444;
+}
+.phone-screen {
+  background: #fff;
+  border-radius: 28px;
+  overflow: hidden;
+  height: 580px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.status-bar {
+  background: #CC5500;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 10px;
+  color: white;
+  flex-shrink: 0;
+}
+
+/* 标签栏 */
+.tab-bar {
+  background: #CC5500;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 4px 6px;
+  gap: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.tab-item {
+  background: #BB4400;
+  border-radius: 4px;
+  height: 28px;
+  min-width: 80px;
+  max-width: 100px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px 0 8px;
+  font-size: 10px;
+  color: white;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.tab-item.active { background: #FF6B00; }
+.tab-close { font-size: 9px; opacity: 0.8; cursor: pointer; margin-left: auto; }
+.tab-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 工具栏 */
+.toolbar {
+  background: #FF6B00;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.nav-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: white;
+  font-size: 16px;
+}
+.nav-btn.disabled { opacity: 0.35; }
+.nav-btn:not(.disabled):hover { background: rgba(255,255,255,0.15); }
+
+.address-bar {
+  flex: 1;
+  height: 30px;
+  background: white;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 11px;
+  color: #333;
+  overflow: hidden;
+  margin: 0 4px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.address-favicon { font-size: 10px; margin-right: 5px; flex-shrink: 0; }
+
+/* 进度条 */
+.progress-bar {
+  height: 3px;
+  background: #FFE0CC;
+  flex-shrink: 0;
+}
+.progress-fill {
+  height: 100%;
+  background: #FF6B00;
+  width: 65%;
+  animation: progress 2s ease-in-out infinite alternate;
+}
+@keyframes progress { from { width: 20%; } to { width: 85%; } }
+
+/* 网页内容模拟 */
+.webpage {
+  flex: 1;
+  background: white;
+  overflow: hidden;
+  position: relative;
+}
+.baidu-mock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px 0;
+}
+.baidu-logo {
+  width: 180px;
+  height: 60px;
+  background: linear-gradient(135deg, #2932e1, #e01010);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+  font-family: serif;
+}
+.search-box {
+  width: 100%;
+  height: 36px;
+  border: 1.5px solid #FF6B00;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  font-size: 12px;
+  color: #999;
+  gap: 6px;
+}
+.search-btn {
+  width: 70px;
+  height: 32px;
+  background: #FF6B00;
+  border-radius: 16px;
+  color: white;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  cursor: pointer;
+}
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+  width: 100%;
+}
+.quick-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.quick-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.quick-text { font-size: 9px; color: #666; }
+
+/* 菜单下拉 */
+.menu-sheet {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding-top: 108px;
+  padding-right: 8px;
+  z-index: 10;
+}
+.menu-popup {
+  background: white;
+  border-radius: 8px;
+  width: 160px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+.menu-item {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #333;
+  border-bottom: 0.5px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.menu-item:last-child { border-bottom: none; }
+.menu-item span { font-size: 15px; }
+
+/* 书签页 */
+.bookmark-page {
+  display: flex;
+  flex-direction: column;
+}
+.page-header {
+  background: #FF6B00;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.page-header-title { color: white; font-size: 16px; font-weight: 600; flex: 1; }
+.bookmark-list { flex: 1; overflow: hidden; }
+.bookmark-item {
+  padding: 10px 16px;
+  border-bottom: 0.5px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bookmark-icon { font-size: 20px; flex-shrink: 0; }
+.bookmark-info { flex: 1; overflow: hidden; }
+.bookmark-title { font-size: 13px; color: #212121; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bookmark-url { font-size: 10px; color: #9E9E9E; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 设置页 */
+.settings-page { flex: 1; padding: 16px; overflow: hidden; background: #fafafa; }
+.settings-title { font-size: 15px; font-weight: 600; color: #212121; margin-bottom: 12px; }
+.radio-item {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  gap: 10px;
+  padding: 0 4px;
+}
+.radio-circle {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid #ddd;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.radio-circle.checked { border-color: #FF6B00; }
+.radio-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF6B00; }
+.radio-label { font-size: 13px; color: #333; }
+.save-btn {
+  background: #FF6B00;
+  color: white;
+  border-radius: 8px;
+  height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  margin-top: 20px;
+  cursor: pointer;
+}
+
+/* 通用 */
+.back-btn { color: white; font-size: 20px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- 主界面 - 浏览中 -->
+<div>
+<div class="section-title">📱 主界面 · 浏览状态</div>
+<div class="phone-frame">
+  <div class="phone-screen">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>🔋 100%</span>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item active">
+        <span class="tab-label">百度一下，你就知道</span>
+        <span class="tab-close">✕</span>
+      </div>
+      <div class="tab-item">
+        <span class="tab-label">新标签页</span>
+        <span class="tab-close">✕</span>
+      </div>
+      <div class="tab-item" style="min-width:32px;max-width:32px;justify-content:center;background:#CC5500;font-size:16px;">＋</div>
+    </div>
+    <div class="toolbar">
+      <div class="nav-btn disabled">←</div>
+      <div class="nav-btn disabled">→</div>
+      <div class="address-bar">
+        <span class="address-favicon">🔒</span>
+        <span>www.baidu.com</span>
+      </div>
+      <div class="nav-btn">↻</div>
+      <div class="nav-btn">⌂</div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill"></div>
+    </div>
+    <div class="webpage">
+      <div class="baidu-mock">
+        <div class="baidu-logo">百度</div>
+        <div class="search-box">🔍 <span>输入搜索内容</span></div>
+        <div class="search-btn">百度一下</div>
+        <div class="quick-links">
+          <div class="quick-link"><div class="quick-icon" style="background:#fff1e6;">📰</div><div class="quick-text">新闻</div></div>
+          <div class="quick-link"><div class="quick-icon" style="background:#e8f5e9;">🎵</div><div class="quick-text">音乐</div></div>
+          <div class="quick-link"><div class="quick-icon" style="background:#e3f2fd;">🎬</div><div class="quick-text">视频</div></div>
+          <div class="quick-link"><div class="quick-icon" style="background:#fce4ec;">🛒</div><div class="quick-text">购物</div></div>
+          <div class="quick-link"><div class="quick-icon" style="background:#f3e5f5;">🗺</div><div class="quick-text">地图</div></div>
+          <div class="quick-link"><div class="quick-icon" style="background:#e0f2f1;">📚</div><div class="quick-text">百科</div></div>
+          <div class="quick-link"><div class="quick-icon" style="background:#fff8e1;">💬</div><div class="quick-text">贴吧</div></div>
+          <div class="quick-link"><div class="quick-icon" style="background:#fbe9e7;">⭐</div><div class="quick-text">更多</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 主界面 - 菜单展开 -->
+<div>
+<div class="section-title">📋 主界面 · 菜单展开</div>
+<div class="phone-frame">
+  <div class="phone-screen">
+    <div class="status-bar"><span>9:41</span><span>🔋 100%</span></div>
+    <div class="tab-bar">
+      <div class="tab-item active"><span class="tab-label">沽德耐特酒吧</span><span class="tab-close">✕</span></div>
+      <div class="tab-item"><span class="tab-label">百度</span><span class="tab-close">✕</span></div>
+    </div>
+    <div class="toolbar">
+      <div class="nav-btn">←</div>
+      <div class="nav-btn disabled">→</div>
+      <div class="address-bar">
+        <span class="address-favicon">🔒</span>
+        <span>gudenaite.com</span>
+      </div>
+      <div class="nav-btn">↻</div>
+      <div class="nav-btn">⌂</div>
+    </div>
+    <div class="progress-bar" style="height:3px;background:#eee;"></div>
+    <div class="webpage" style="position:relative;">
+      <div style="padding:16px;font-size:12px;color:#666;line-height:1.8;">
+        <div style="font-size:18px;font-weight:bold;color:#FF6B00;margin-bottom:8px;">沽德耐特酒吧</div>
+        <div>· 北京 · 成都 · 上海 · 深圳</div>
+        <div>· 精调鸡尾酒 · 威士忌单一麦芽</div>
+        <div>· 营业时间 18:00 - 次日03:00</div>
+      </div>
+      <div class="menu-sheet">
+        <div class="menu-popup">
+          <div class="menu-item"><span>📑</span> 新建标签页</div>
+          <div class="menu-item"><span>⭐</span> 收藏此页</div>
+          <div class="menu-item"><span>📌</span> 书签管理</div>
+          <div class="menu-item"><span>🕐</span> 历史记录</div>
+          <div class="menu-item"><span>🖥</span> 桌面版网站</div>
+          <div class="menu-item"><span>🔗</span> 分享链接</div>
+          <div class="menu-item"><span>🧹</span> 清除数据</div>
+          <div class="menu-item"><span>⚙️</span> 设置</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 书签管理页 -->
+<div>
+<div class="section-title">⭐ 书签管理页</div>
+<div class="phone-frame">
+  <div class="phone-screen">
+    <div class="status-bar"><span>9:41</span><span>🔋 100%</span></div>
+    <div class="bookmark-page">
+      <div class="page-header">
+        <span class="back-btn">←</span>
+        <span class="page-header-title">书签</span>
+      </div>
+      <div class="bookmark-list">
+        <div class="bookmark-item">
+          <div class="bookmark-icon">🌐</div>
+          <div class="bookmark-info">
+            <div class="bookmark-title">百度一下，你就知道</div>
+            <div class="bookmark-url">https://www.baidu.com</div>
+          </div>
+        </div>
+        <div class="bookmark-item" style="background:#fff8f0;">
+          <div class="bookmark-icon">🍊</div>
+          <div class="bookmark-info">
+            <div class="bookmark-title">沽德耐特酒吧官网</div>
+            <div class="bookmark-url">https://gudenaite.com</div>
+          </div>
+        </div>
+        <div class="bookmark-item">
+          <div class="bookmark-icon">📰</div>
+          <div class="bookmark-info">
+            <div class="bookmark-title">腾讯新闻</div>
+            <div class="bookmark-url">https://news.qq.com</div>
+          </div>
+        </div>
+        <div class="bookmark-item">
+          <div class="bookmark-icon">🛒</div>
+          <div class="bookmark-info">
+            <div class="bookmark-title">淘宝网 - 购物</div>
+            <div class="bookmark-url">https://www.taobao.com</div>
+          </div>
+        </div>
+        <div class="bookmark-item">
+          <div class="bookmark-icon">💻</div>
+          <div class="bookmark-info">
+            <div class="bookmark-title">GitHub</div>
+            <div class="bookmark-url">https://github.com</div>
+          </div>
+        </div>
+        <div class="bookmark-item">
+          <div class="bookmark-icon">🎬</div>
+          <div class="bookmark-info">
+            <div class="bookmark-title">哔哩哔哩</div>
+            <div class="bookmark-url">https://www.bilibili.com</div>
+          </div>
+        </div>
+        <div style="padding:10px 16px;font-size:11px;color:#999;">长按条目可删除</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 设置页 -->
+<div>
+<div class="section-title">⚙️ 设置 · 搜索引擎</div>
+<div class="phone-frame">
+  <div class="phone-screen">
+    <div class="status-bar"><span>9:41</span><span>🔋 100%</span></div>
+    <div style="display:flex;flex-direction:column;flex:1;">
+      <div class="page-header">
+        <span class="back-btn">←</span>
+        <span class="page-header-title">设置</span>
+      </div>
+      <div class="settings-page">
+        <div class="settings-title">搜索引擎</div>
+        <div class="radio-item">
+          <div class="radio-circle checked"><div class="radio-dot"></div></div>
+          <span class="radio-label">百度 (baidu.com)</span>
+        </div>
+        <div class="radio-item">
+          <div class="radio-circle"></div>
+          <span class="radio-label">必应 Bing (bing.com)</span>
+        </div>
+        <div class="radio-item">
+          <div class="radio-circle"></div>
+          <span class="radio-label">谷歌 Google</span>
+        </div>
+        <div class="radio-item">
+          <div class="radio-circle"></div>
+          <span class="radio-label">搜狗 (sogou.com)</span>
+        </div>
+        <div class="radio-item">
+          <div class="radio-circle"></div>
+          <span class="radio-label">自定义搜索引擎</span>
+        </div>
+        <div style="background:white;border-radius:16px;height:34px;border:1px solid #ddd;display:flex;align-items:center;padding:0 10px;font-size:11px;color:#aaa;margin-top:8px;">
+          例如: https://example.com/search?q=
+        </div>
+        <div class="save-btn">保存设置</div>
+        
+        <div style="margin-top:20px;padding-top:16px;border-top:0.5px solid #eee;">
+          <div class="settings-title">其他</div>
+          <div style="font-size:12px;color:#666;line-height:2.2;">
+            <div>版本：小橘浏览器 v1.0.0</div>
+            <div>内核：系统 WebView</div>
+            <div>最低支持：Android 5.0+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</body>
+</html>

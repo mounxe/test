@@ -1,0 +1,42 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build debug APK
+        run: |
+          cd XiaoJuBrowser
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: XiaoJuBrowser-debug
+          path: XiaoJuBrowser/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Download APK (for manual trigger)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "APK 已编译完成，请在 Artifacts 中下载 XiaoJuBrowser-debug"

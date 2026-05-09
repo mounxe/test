@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 橘色主色调 -->
+    <color name="primary_orange">#FF6B00</color>
+    <color name="primary_orange_dark">#E05A00</color>
+    <color name="primary_orange_light">#FF8C33</color>
+    <color name="accent_orange">#FFA040</color>
+
+    <!-- Tab栏 -->
+    <color name="tab_bar_bg">#CC5500</color>
+    <color name="tab_item_active">#FF6B00</color>
+    <color name="tab_item_inactive">#BB4400</color>
+    <color name="tab_text">#FFFFFF</color>
+
+    <!-- 背景 -->
+    <color name="background">#FFFFFF</color>
+    <color name="surface">#F8F8F8</color>
+
+    <!-- 文字 -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#616161</color>
+    <color name="text_hint">#9E9E9E</color>
+    <color name="address_text">#333333</color>
+    <color name="address_hint">#AAAAAA</color>
+
+    <!-- 其他 -->
+    <color name="white">#FFFFFF</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="progress_bg">#FFE0CC</color>
+    <color name="address_bar_bg">#FFFFFF</color>
+</resources>
