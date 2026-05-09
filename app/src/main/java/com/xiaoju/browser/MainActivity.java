@@ -64,8 +64,7 @@ public class MainActivity extends AppCompatActivity {
     private HistoryManager historyManager;
     private SharedPreferences prefs;
 
-    private static final String PREF_NAME = "xiaoj
-u_prefs";
+    private static final String PREF_NAME = "xiaoju_prefs";
     private static final String PREF_SEARCH_ENGINE = "search_engine";
 
     @Override
