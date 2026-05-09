@@ -26,7 +26,7 @@ jobs:
 
       - name: Build debug APK
         run: |
-          cd XiaoJuBrowser
+          
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
@@ -34,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: XiaoJuBrowser-debug
-          path: XiaoJuBrowser/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
 
       - name: Download APK (for manual trigger)
         if: github.event_name == 'workflow_dispatch'
