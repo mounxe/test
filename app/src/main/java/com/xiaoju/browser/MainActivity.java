@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     // WebView 管理
     private List<TabInfo> tabList = new ArrayList<>();
     private int currentTabIndex = 0;
+    private AlertDialog tabDialog;
 
     // 数据
     private BookmarkManager bookmarkManager;
@@ -156,10 +157,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnHomeBottom.setOnClickListener(v -> showHome());
 
-        btnTabs.setOnClickListener(v -> {
-            enterBrowsingMode();
-            addNewTab(null);
-        });
+        btnTabs.setOnClickListener(v -> showTabManager());
 
         btnMenu.setOnClickListener(v -> showBottomMenu());
     }
@@ -270,9 +268,143 @@ public class MainActivity extends AppCompatActivity {
         if (imm != null) imm.hideSoftInputFromWindow(addressBar.getWindowToken(), 0);
     }
 
-    // =================== 底部菜单 ===================
+    // =================== 标签页管理 ===================
 
-    private void showBottomMenu() {
+    private void showTabManager() {
+        if (tabList.isEmpty()) {
+            enterBrowsingMode();
+            addNewTab(null);
+            return;
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("标签页 (" + tabList.size() + ")");
+
+        // 创建标签页列表
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 16, 32, 16);
+
+        for (int i = 0; i < tabList.size(); i++) {
+            final int index = i;
+            TabInfo tab = tabList.get(i);
+
+            // 每个标签页的布局
+            LinearLayout tabLayout = new LinearLayout(this);
+            tabLayout.setOrientation(LinearLayout.HORIZONTAL);
+            tabLayout.setPadding(16, 24, 16, 24);
+            tabLayout.setBackgroundResource(android.R.drawable.list_selector_background);
+
+            // 标签页标题
+            TextView tv = new TextView(this);
+            String displayText = tab.webView.getTitle();
+            if (TextUtils.isEmpty(displayText)) {
+                displayText = tab.webView.getUrl();
+            }
+            if (TextUtils.isEmpty(displayText)) {
+                displayText = "新标签页";
+            }
+            tv.setText(displayText);
+            tv.setTextSize(16);
+            tv.setTextColor(0xFF000000);
+            tv.setSingleLine(true);
+            tv.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+            tv.setLayoutParams(textParams);
+            tv.setPadding(0, 0, 16, 0);
+
+            // 关闭按钮
+            ImageButton closeBtn = new ImageButton(this);
+            closeBtn.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
+            closeBtn.setBackground(null);
+            closeBtn.setPadding(8, 8, 8, 8);
+            final int closeIndex = i;
+            closeBtn.setOnClickListener(v -> {
+                removeTab(closeIndex);
+            });
+
+            tabLayout.addView(tv);
+            tabLayout.addView(closeBtn);
+
+            // 点击切换到该标签页
+            final int clickIndex = i;
+            tabLayout.setOnClickListener(v -> {
+                switchToTab(clickIndex);
+                if (tabDialog != null) tabDialog.dismiss();
+            });
+
+            layout.addView(tabLayout);
+
+            // 分隔线
+            View divider = new View(this);
+            divider.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1));
+            divider.setBackgroundColor(0xFFE0E0E0);
+            layout.addView(divider);
+        }
+
+        // 新建标签页按钮
+        Button newTabBtn = new Button(this);
+        newTabBtn.setText("+ 新建标签页");
+        newTabBtn.setBackground(null);
+        newTabBtn.setTextColor(0xFFFF6600);
+        newTabBtn.setPadding(16, 24, 16, 24);
+        newTabBtn.setOnClickListener(v -> {
+            if (tabDialog != null) tabDialog.dismiss();
+            enterBrowsingMode();
+            addNewTab(null);
+        });
+        layout.addView(newTabBtn);
+
+        builder.setView(layout);
+        builder.setNegativeButton("关闭", null);
+
+        tabDialog = builder.create();
+        tabDialog.show();
+    }
+
+    private void switchToTab(int index) {
+        if (index < 0 || index >= tabList.size()) return;
+
+        enterBrowsingMode();
+
+        // 隐藏当前WebView
+        WebView current = getCurrentWebView();
+        if (current != null) {
+            current.setVisibility(View.GONE);
+        }
+
+        // 显示选中的WebView
+        currentTabIndex = index;
+        TabInfo tab = tabList.get(currentTabIndex);
+        tab.webView.setVisibility(View.VISIBLE);
+
+        updateAddressBar();
+        updateNavButtons();
+    }
+
+    private void removeTab(int index) {
+        if (index < 0 || index >= tabList.size()) return;
+
+        TabInfo tab = tabList.get(index);
+        webContainer.removeView(tab.webView);
+        tab.webView.destroy();
+        tabList.remove(index);
+
+        if (tabList.isEmpty()) {
+            if (dialog != null) dialog.dismiss();
+            showHome();
+            return;
+        }
+
+        if (currentTabIndex >= tabList.size()) {
+            currentTabIndex = tabList.size() - 1;
+        }
+
+        switchToTab(currentTabIndex);
+        showTabManager(); // 刷新对话框
+    }
         String[] items = {
             getString(R.string.add_bookmark),
             getString(R.string.bookmarks),

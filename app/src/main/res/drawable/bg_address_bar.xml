@@ -3,4 +3,5 @@
     android:shape="rectangle">
     <solid android:color="@color/address_bar_bg" />
     <corners android:radius="16dp" />
+    <stroke android:width="1.5dp" android:color="#CCCCCC" />
 </shape>

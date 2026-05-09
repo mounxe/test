@@ -30,6 +30,7 @@
                 android:layout_marginHorizontal="6dp"
                 android:background="@drawable/bg_address_bar"
                 android:paddingHorizontal="10dp"
+                android:paddingRight="36dp"
                 android:textColor="@color/address_text"
                 android:textSize="14sp"
                 android:textColorHint="@color/address_hint"
@@ -37,7 +38,8 @@
                 android:maxLines="1"
                 android:imeOptions="actionGo"
                 android:inputType="textUri"
-                android:selectAllOnFocus="true" />
+                android:selectAllOnFocus="true"
+                android:drawableEnd="@drawable/ic_search" />
 
             <ImageButton
                 android:id="@+id/btn_refresh_top"
@@ -86,6 +88,7 @@
             android:layout_height="48dp"
             android:background="@drawable/bg_address_bar"
             android:paddingHorizontal="16dp"
+            android:paddingRight="40dp"
             android:textColor="@color/address_text"
             android:textSize="16sp"
             android:textColorHint="@color/address_hint"
@@ -94,7 +97,8 @@
             android:imeOptions="actionGo"
             android:inputType="text"
             android:selectAllOnFocus="true"
-            android:gravity="center_vertical" />
+            android:gravity="center_vertical"
+            android:drawableEnd="@drawable/ic_search" />
 
     </LinearLayout>
 
