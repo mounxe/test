@@ -7,11 +7,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.KeyEvent;
-import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -39,10 +40,8 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private enum Mode { HOME, BROWSING }
-    private Mode currentMode = Mode.HOME;
-
-    // UI：主页
+    private int currentTabIndex = 0;
+    private AlertDialog tabDialog;
     private LinearLayout homeScreen;
     private EditText homeSearchBar;
 
@@ -55,7 +54,8 @@ public class MainActivity extends AppCompatActivity {
     // UI：底部工具栏
     private LinearLayout bottomToolbar;
     private ImageButton btnBack, btnForward, btnRefreshTop;
-    private ImageButton btnHomeBottom, btnTabs, btnMenu;
+    private ImageButton btnHomeBottom, btnMenu;
+    private TextView btnTabs;
 
     // WebView 管理
     private List<TabInfo> tabList = new ArrayList<>();
@@ -81,7 +81,9 @@ public class MainActivity extends AppCompatActivity {
 
         initViews();
         setupListeners();
-        showHome();
+
+        // 创建第一个主页标签
+        addNewTab(null);
     }
 
     private void initViews() {
@@ -103,11 +105,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
+        // 主页搜索栏：输入后打开网页
         homeSearchBar.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_GO) {
                 String input = homeSearchBar.getText().toString().trim();
                 if (!TextUtils.isEmpty(input)) {
-                    enterBrowsingMode();
                     addNewTab(convertToUrl(input));
                 }
                 return true;
@@ -115,11 +117,46 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
 
+        // 主页搜索栏的搜索图标点击
+        homeSearchBar.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                Drawable drawable = homeSearchBar.getCompoundDrawables()[2]; // drawableEnd
+                if (drawable != null) {
+                    int drawableWidth = drawable.getBounds().width();
+                    if (event.getX() >= (homeSearchBar.getWidth() - homeSearchBar.getPaddingRight() - drawableWidth)) {
+                        String input = homeSearchBar.getText().toString().trim();
+                        if (!TextUtils.isEmpty(input)) {
+                            addNewTab(convertToUrl(input));
+                        }
+                        return true;
+                    }
+                }
+            }
+            return false;
+        });
+
+        // 地址栏：输入后加载URL
         addressBar.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_GO) {
                 loadUrl(addressBar.getText().toString().trim());
                 hideKeyboard();
                 return true;
+            }
+            return false;
+        });
+
+        // 地址栏的搜索图标点击
+        addressBar.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                Drawable drawable = addressBar.getCompoundDrawables()[2]; // drawableEnd
+                if (drawable != null) {
+                    int drawableWidth = drawable.getBounds().width();
+                    if (event.getX() >= (addressBar.getWidth() - addressBar.getPaddingRight() - drawableWidth)) {
+                        loadUrl(addressBar.getText().toString().trim());
+                        hideKeyboard();
+                        return true;
+                    }
+                }
             }
             return false;
         });
@@ -156,7 +193,24 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btnHomeBottom.setOnClickListener(v -> showHome());
+        btnHomeBottom.setOnClickListener(v -> {
+            // 回到当前标签的主页状态
+            TabInfo tab = tabList.get(currentTabIndex);
+            if (tab.isHomeTab) {
+                showHomeForCurrentTab();
+            } else {
+                // 将当前标签转为主页标签
+                if (tab.webView != null) {
+                    webContainer.removeView(tab.webView);
+                    tab.webView.destroy();
+                }
+                tab.webView = null;
+                tab.isHomeTab = true;
+                tab.title = "主页";
+                showHomeForCurrentTab();
+            }
+            updateTabButton();
+        });
 
         btnTabs.setOnClickListener(v -> showTabManager());
 
@@ -165,47 +219,52 @@ public class MainActivity extends AppCompatActivity {
 
     // =================== 模式切换 ===================
 
-    private void showHome() {
-        currentMode = Mode.HOME;
+    private void showHomeForCurrentTab() {
         homeScreen.setVisibility(View.VISIBLE);
-        toolbarTop.setVisibility(View.GONE);
+        toolbarTop.setVisibility(View.VISIBLE);
         webContainer.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
-
-        for (TabInfo tab : tabList) {
-            webContainer.removeView(tab.webView);
-            tab.webView.destroy();
-        }
-        tabList.clear();
-        currentTabIndex = 0;
+        addressBar.setText("");
+        updateNavButtons();
+        updateTabButton();
     }
 
-    private void enterBrowsingMode() {
-        currentMode = Mode.BROWSING;
+    private void showWebForCurrentTab() {
         homeScreen.setVisibility(View.GONE);
         toolbarTop.setVisibility(View.VISIBLE);
         webContainer.setVisibility(View.VISIBLE);
+        updateAddressBar();
+        updateNavButtons();
+        updateTabButton();
     }
 
     // =================== 标签页管理 ===================
 
     private void addNewTab(String url) {
+        // 如果URL为null，创建主页标签
+        if (url == null) {
+            TabInfo tab = new TabInfo(true); // isHomeTab = true
+            tabList.add(tab);
+            currentTabIndex = tabList.size() - 1;
+            showHomeForCurrentTab();
+            updateTabButton();
+            return;
+        }
+
         enterBrowsingMode();
 
         WebView webView = createWebView();
         webContainer.addView(webView);
 
-        String title = (url != null) ? url : "";
-        TabInfo tab = new TabInfo(webView, title);
+        TabInfo tab = new TabInfo(webView, url);
         tabList.add(tab);
         currentTabIndex = tabList.size() - 1;
 
-        if (url != null) {
-            webView.loadUrl(url);
-        }
+        webView.loadUrl(url);
 
         updateAddressBar();
         updateNavButtons();
+        updateTabButton();
     }
 
     private WebView getCurrentWebView() {
@@ -236,6 +295,10 @@ public class MainActivity extends AppCompatActivity {
         btnForward.setEnabled(wv.canGoForward());
         btnBack.setAlpha(wv.canGoBack() ? 1.0f : 0.4f);
         btnForward.setAlpha(wv.canGoForward() ? 1.0f : 0.4f);
+    }
+
+    private void updateTabButton() {
+        btnTabs.setText(String.valueOf(tabList.size()));
     }
 
     // =================== URL 加载 ===================
@@ -368,21 +431,26 @@ public class MainActivity extends AppCompatActivity {
     private void switchToTab(int index) {
         if (index < 0 || index >= tabList.size()) return;
 
-        enterBrowsingMode();
-
         // 隐藏当前WebView
-        WebView current = getCurrentWebView();
-        if (current != null) {
-            current.setVisibility(View.GONE);
+        TabInfo currentTab = (currentTabIndex < tabList.size()) ? tabList.get(currentTabIndex) : null;
+        if (currentTab != null && currentTab.webView != null) {
+            currentTab.webView.setVisibility(View.GONE);
         }
 
-        // 显示选中的WebView
+        // 切换到选中的标签
         currentTabIndex = index;
         TabInfo tab = tabList.get(currentTabIndex);
-        tab.webView.setVisibility(View.VISIBLE);
+
+        if (tab.isHomeTab) {
+            showHomeForCurrentTab();
+        } else {
+            showWebForCurrentTab();
+            tab.webView.setVisibility(View.VISIBLE);
+        }
 
         updateAddressBar();
         updateNavButtons();
+        updateTabButton();
     }
 
     private void removeTab(int index) {
@@ -610,11 +678,20 @@ public class MainActivity extends AppCompatActivity {
         WebView webView;
         String title;
         boolean desktopMode;
+        boolean isHomeTab;
 
         TabInfo(WebView webView, String title) {
             this.webView = webView;
             this.title = title;
             this.desktopMode = false;
+            this.isHomeTab = false;
+        }
+
+        TabInfo(boolean isHomeTab) {
+            this.webView = null;
+            this.title = "主页";
+            this.desktopMode = false;
+            this.isHomeTab = isHomeTab;
         }
     }
 }
